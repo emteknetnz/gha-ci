@@ -300,52 +300,52 @@ jobs:
           echo "COMPOSER_ROOT_VERSION is $COMPOSER_ROOT_VERSION"
 
           # If using phpunit9, ensure sminnee phpunit5 modules do not get installed
-          php -r '
-            $j = json_decode(file_get_contents("composer.json"));
-            $pu = $j->{"require-dev"}->{"phpunit/phpunit"} ?? "";
-            $rt = $j->{"require-dev"}->{"silverstripe/recipe-testing"} ?? "";
-            if ($pu == "^9" || $pu == "^9.5" || $rt == "^2" || $rt == "^3") {
-              if (!property_exists($j, "replace")) {
-                $j->replace = new stdClass();
-              }
-              $j->replace->{"sminnee/phpunit"} = "*";
-              $j->replace->{"sminnee/phpunit-mock-objects"} = "*";
-              file_put_contents("composer.json", json_encode($j, JSON_PRETTY_PRINT + JSON_UNESCAPED_SLASHES));
-            }
-          '
+          # php -r '
+          #   $j = json_decode(file_get_contents("composer.json"));
+          #   $pu = $j->{"require-dev"}->{"phpunit/phpunit"} ?? "";
+          #   $rt = $j->{"require-dev"}->{"silverstripe/recipe-testing"} ?? "";
+          #   if ($pu == "^9" || $pu == "^9.5" || $rt == "^2" || $rt == "^3") {
+          #     if (!property_exists($j, "replace")) {
+          #       $j->replace = new stdClass();
+          #     }
+          #     $j->replace->{"sminnee/phpunit"} = "*";
+          #     $j->replace->{"sminnee/phpunit-mock-objects"} = "*";
+          #     file_put_contents("composer.json", json_encode($j, JSON_PRETTY_PRINT + JSON_UNESCAPED_SLASHES));
+          #   }
+          # '
 
           # Required for any module/recipe that runs silverstripe/assets unit tests
           # Should technically be defined as composer_require_extra on individual modules, though easier just doing here
           # 1.6.10 is for --prefer-lowest and is the minimum version with php 8.1 support
           # composer require mikey179/vfsstream:^1.6.10 --dev --no-update
 
-          if [[ "${{ matrix.db }}" == "pgsql" ]] && ! [[ $GITHUB_REPOSITORY =~ /silverstripe-postgresql$ ]]; then
+          # if [[ "${{ matrix.db }}" == "pgsql" ]] && ! [[ $GITHUB_REPOSITORY =~ /silverstripe-postgresql$ ]]; then
             # composer require "silverstripe/postgresql:^2 || ^3" --no-update
-          fi
-          if [[ "${{ matrix.endtoend }}" == "true" ]] && ! [[ $GITHUB_REPOSITORY =~ /recipe-testing$ ]]; then
+          # fi
+          # if [[ "${{ matrix.endtoend }}" == "true" ]] && ! [[ $GITHUB_REPOSITORY =~ /recipe-testing$ ]]; then
             # composer require "silverstripe/recipe-testing:^2 || ^3" --dev --no-update
-          fi
-          if [[ "${{ matrix.phplinting }}" == "true" ]] && [[ -f .cow.json ]] && ! [[ $GITHUB_REPOSITORY =~ /cow$ ]]; then
+          # fi
+          # if [[ "${{ matrix.phplinting }}" == "true" ]] && [[ -f .cow.json ]] && ! [[ $GITHUB_REPOSITORY =~ /cow$ ]]; then
             # cow ~2.0 support guzzle 6 so is installable on older branches, dev-master supports guzzle 7
             # composer require "silverstripe/cow:~2.0 || dev-master" --dev --no-update
-          fi
+          # fi
 
           # Require silverstripe/installer for non-recipes and all but a few modules
           # Note: this block needs to be above COMPOSER_REQUIRE_EXTRA to allow that to override what is set here
-          if [[ "${{ matrix.installer_version }}" != "" ]]; then
+          # if [[ "${{ matrix.installer_version }}" != "" ]]; then
             # composer require silverstripe/installer:${{ matrix.installer_version }} --no-update
-          fi
+          # fi
 
-          if [[ $INPUTS_COMPOSER_REQUIRE_EXTRA != "" ]]; then
+          # if [[ $INPUTS_COMPOSER_REQUIRE_EXTRA != "" ]]; then
             # $INPUTS_COMPOSER_REQUIRE_EXTRA is explicitly not wrapped in double quotes below
             # so that multiple requirements separated by spaces will work
             # composer require $INPUTS_COMPOSER_REQUIRE_EXTRA --no-update
-          fi
-          if [[ $MATRIX_COMPOSER_REQUIRE_EXTRA != "" ]]; then
+          # fi
+          # if [[ $MATRIX_COMPOSER_REQUIRE_EXTRA != "" ]]; then
             # $MATRIX_COMPOSER_REQUIRE_EXTRA is explicitly not wrapped in double quotes below
             # so that multiple requirements separated by spaces will work
             # composer require $MATRIX_COMPOSER_REQUIRE_EXTRA --no-update
-          fi
+          # fi
 
           # a) Ensure composer.json has prefer-stable true and minimum-stability dev
           # b) Update preferred-install to source for recipes and some modules that run
@@ -354,35 +354,35 @@ jobs:
           #    which is required for --prefer-lowest to install
           #    https://github.com/silverstripe/vendor-plugin/pull/49
           # d) Set version of PHP to make it easier to copy paste composer.json to local dev environment
-          php -r '
-            $j = json_decode(file_get_contents("composer.json"));
-            $j->{"prefer-stable"} = true;
-            $j->{"minimum-stability"} = "dev";
-            if (empty($j->config)) {
-              $j->config = new stdClass();
-            }
-            if (empty($j->config->{"preferred-install"})) {
-              $j->config->{"preferred-install"} = new stdClass();
-            }
-            $j->config->{"preferred-install"}->{"silverstripe/*"} = "source";
-            $j->config->{"preferred-install"}->{"creative-commoners/*"} = "source";
-            $j->config->{"preferred-install"}->{"symbiote/*"} = "source";
-            $j->config->{"preferred-install"}->{"dnadesign/*"} = "source";
-            $j->config->{"preferred-install"}->{"bringyourownideas/*"} = "source";
-            $j->config->{"preferred-install"}->{"colymba/*"} = "source";
-            $j->config->{"preferred-install"}->{"cwp/*"} = "source";
-            $j->config->{"preferred-install"}->{"tractorcow/*"} = "source";
-            $j->config->{"preferred-install"}->{"*"} = "dist";
-            if (empty($j->conflict)) {
-              $j->conflict = new stdClass();
-            }
-            $j->conflict->{"silverstripe/vendor-plugin"} = "<1.5.2";
-            if (empty($j->config->platform)) {
-              $j->config->platform = new stdClass();
-            }
-            $j->config->platform->php = "${{ matrix.php }}";
-            file_put_contents("composer.json", json_encode($j, JSON_PRETTY_PRINT + JSON_UNESCAPED_SLASHES));
-          '
+          # php -r '
+          #   $j = json_decode(file_get_contents("composer.json"));
+          #   $j->{"prefer-stable"} = true;
+          #   $j->{"minimum-stability"} = "dev";
+          #   if (empty($j->config)) {
+          #     $j->config = new stdClass();
+          #   }
+          #   if (empty($j->config->{"preferred-install"})) {
+          #     $j->config->{"preferred-install"} = new stdClass();
+          #   }
+          #   $j->config->{"preferred-install"}->{"silverstripe/*"} = "source";
+          #   $j->config->{"preferred-install"}->{"creative-commoners/*"} = "source";
+          #   $j->config->{"preferred-install"}->{"symbiote/*"} = "source";
+          #   $j->config->{"preferred-install"}->{"dnadesign/*"} = "source";
+          #   $j->config->{"preferred-install"}->{"bringyourownideas/*"} = "source";
+          #   $j->config->{"preferred-install"}->{"colymba/*"} = "source";
+          #   $j->config->{"preferred-install"}->{"cwp/*"} = "source";
+          #   $j->config->{"preferred-install"}->{"tractorcow/*"} = "source";
+          #   $j->config->{"preferred-install"}->{"*"} = "dist";
+          #   if (empty($j->conflict)) {
+          #     $j->conflict = new stdClass();
+          #   }
+          #   $j->conflict->{"silverstripe/vendor-plugin"} = "<1.5.2";
+          #   if (empty($j->config->platform)) {
+          #     $j->config->platform = new stdClass();
+          #   }
+          #   $j->config->platform->php = "${{ matrix.php }}";
+          #   file_put_contents("composer.json", json_encode($j, JSON_PRETTY_PRINT + JSON_UNESCAPED_SLASHES));
+          # '
 
           # Enable plugins
           # composer config allow-plugins.composer/installers true
@@ -393,7 +393,9 @@ jobs:
           # Modules do not have composer.lock files, so `composer update` is the same speed as `composer install`
           # `|| :` prevents an exit code on a failed composer update from halting the workflow
           # composer update --no-interaction --no-progress ${{ matrix.composer_args }} 2> __update_attempt.txt || :
-          composer install --no-interaction --no-progress 2> __update_attempt.txt || :
+          composer install --no-interaction --no-progress
+          
+          touch __update_attempt.txt
 
           if ! [[ $(cat __update_attempt.txt) =~ Problem ]]; then
             # Succesfully ran composer update and installed everything
