@@ -317,34 +317,34 @@ jobs:
           # Required for any module/recipe that runs silverstripe/assets unit tests
           # Should technically be defined as composer_require_extra on individual modules, though easier just doing here
           # 1.6.10 is for --prefer-lowest and is the minimum version with php 8.1 support
-          composer require mikey179/vfsstream:^1.6.10 --dev --no-update
+          # composer require mikey179/vfsstream:^1.6.10 --dev --no-update
 
           if [[ "${{ matrix.db }}" == "pgsql" ]] && ! [[ $GITHUB_REPOSITORY =~ /silverstripe-postgresql$ ]]; then
-            composer require "silverstripe/postgresql:^2 || ^3" --no-update
+            # composer require "silverstripe/postgresql:^2 || ^3" --no-update
           fi
           if [[ "${{ matrix.endtoend }}" == "true" ]] && ! [[ $GITHUB_REPOSITORY =~ /recipe-testing$ ]]; then
-            composer require "silverstripe/recipe-testing:^2 || ^3" --dev --no-update
+            # composer require "silverstripe/recipe-testing:^2 || ^3" --dev --no-update
           fi
           if [[ "${{ matrix.phplinting }}" == "true" ]] && [[ -f .cow.json ]] && ! [[ $GITHUB_REPOSITORY =~ /cow$ ]]; then
             # cow ~2.0 support guzzle 6 so is installable on older branches, dev-master supports guzzle 7
-            composer require "silverstripe/cow:~2.0 || dev-master" --dev --no-update
+            # composer require "silverstripe/cow:~2.0 || dev-master" --dev --no-update
           fi
 
           # Require silverstripe/installer for non-recipes and all but a few modules
           # Note: this block needs to be above COMPOSER_REQUIRE_EXTRA to allow that to override what is set here
           if [[ "${{ matrix.installer_version }}" != "" ]]; then
-            composer require silverstripe/installer:${{ matrix.installer_version }} --no-update
+            # composer require silverstripe/installer:${{ matrix.installer_version }} --no-update
           fi
 
           if [[ $INPUTS_COMPOSER_REQUIRE_EXTRA != "" ]]; then
             # $INPUTS_COMPOSER_REQUIRE_EXTRA is explicitly not wrapped in double quotes below
             # so that multiple requirements separated by spaces will work
-            composer require $INPUTS_COMPOSER_REQUIRE_EXTRA --no-update
+            # composer require $INPUTS_COMPOSER_REQUIRE_EXTRA --no-update
           fi
           if [[ $MATRIX_COMPOSER_REQUIRE_EXTRA != "" ]]; then
             # $MATRIX_COMPOSER_REQUIRE_EXTRA is explicitly not wrapped in double quotes below
             # so that multiple requirements separated by spaces will work
-            composer require $MATRIX_COMPOSER_REQUIRE_EXTRA --no-update
+            # composer require $MATRIX_COMPOSER_REQUIRE_EXTRA --no-update
           fi
 
           # a) Ensure composer.json has prefer-stable true and minimum-stability dev
@@ -385,14 +385,15 @@ jobs:
           '
 
           # Enable plugins
-          composer config allow-plugins.composer/installers true
-          composer config allow-plugins.silverstripe/recipe-plugin true
-          composer config allow-plugins.silverstripe/vendor-plugin true
+          # composer config allow-plugins.composer/installers true
+          # composer config allow-plugins.silverstripe/recipe-plugin true
+          # composer config allow-plugins.silverstripe/vendor-plugin true
 
           # matrix.composer_args sometimes includes `--prefer-lowest` which is only supported by `composer update`, not `composer install`
           # Modules do not have composer.lock files, so `composer update` is the same speed as `composer install`
           # `|| :` prevents an exit code on a failed composer update from halting the workflow
-          composer update --no-interaction --no-progress ${{ matrix.composer_args }} 2> __update_attempt.txt || :
+          # composer update --no-interaction --no-progress ${{ matrix.composer_args }} 2> __update_attempt.txt || :
+          composer install --no-interaction --no-progress 2> __update_attempt.txt || :
 
           if ! [[ $(cat __update_attempt.txt) =~ Problem ]]; then
             # Succesfully ran composer update and installed everything
