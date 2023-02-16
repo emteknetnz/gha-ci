@@ -193,11 +193,14 @@ jobs:
           fi
           echo "PHP has been configured"
 
-      - name: Apt install additional requirements 
+      - name: Install additional requirements 
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
+          # These are used for aws-cli, which is pre-installed in github actions. This is only for dynamodb
+          AWS_ACCESS_KEY_ID: my-access-key
+          AWS_SECRET_ACCESS_KEY: my-secret
+          AWS_DEFAULT_REGION: ap-southeast-2
         run: |
-          # apt install extra requirements as required
           if [[ "${{ matrix.endtoend }}" == "true" ]]; then
             sudo apt install -y software-properties-common
             sudo add-apt-repository -y ppa:ondrej/php
@@ -208,6 +211,22 @@ jobs:
           fi
           if [[ $GITHUB_REPOSITORY =~ /(silverstripe-spellcheck|recipe-authoring-tools)$ ]] || [[ "${{ matrix.phpunit_suite }}" == "recipe-authoring-tools" ]]; then
             sudo apt install -y hunspell libhunspell-dev hunspell-en-us
+          fi
+          if [[ $GITHUB_REPOSITORY =~ /(silverstripe-dynamodb)$ ]]; then
+            # install dynamodb
+            mkdir _dynamodb
+            cd _dynamodb
+            sudo wget https://s3.ap-southeast-1.amazonaws.com/dynamodb-local-singapore/dynamodb_local_latest.tar.gz
+            sudo tar -xf dynamodb_local_latest.tar.gz
+            # run dynamo db as background process
+            # github actions comes java - `java -version` = openjdk version "11.0.18" 2023-01-17
+            $(java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar) &
+            sleep 3
+            if ! [[ $(ps -aux | grep DynamoDBLocal.jar) =~ DynamoDBLocal\.jar ]]; then
+              echo "DynamoDBLocal failed to start"
+              exit 1
+            fi
+            cd -
           fi
 
       - name: Configure apache - endtoend test
@@ -530,6 +549,7 @@ jobs:
       - name: Final preparation
         env:
           GITHUB_WORKSPACE: ${{ github.workspace }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           # Add .env file and create artifacts directory
           # Note: the wonky indentation is intentional so there is no space at the start of
@@ -569,6 +589,16 @@ jobs:
           SS_MFA_SECRET_KEY="1234567894175b99966561e1efe237e4"
           SS_BASE_URL="http://localhost"
           EOF
+
+          if [[ $GITHUB_REPOSITORY =~ /(silverstripe-dynamodb)$ ]]; then
+            cat << EOF >> .env
+          AWS_DYNAMODB_ENDPOINT="http://localhost:8000"
+          AWS_DYNAMODB_SESSION_TABLE=mysession
+          AWS_ACCESS_KEY=my-access-key
+          AWS_SECRET_KEY=my-secret
+          AWS_REGION_NAME=ap-southeast-2
+          EOF
+          fi
 
           # debug
           echo ".env is"
