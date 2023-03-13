@@ -43,6 +43,14 @@ on:
         type: boolean
         default: false
         description: Whether tests in the vendor folder should be preserved.
+      branch_major:
+        type: string
+        default: ''
+        description: The major portion of the branch - "latest" or "previous"
+      branch_minor:
+        type: string
+        default: ''
+        description: The minor portion of the branch "next-minor" or "next-patch"
 
 jobs:
 
@@ -77,10 +85,106 @@ jobs:
           # github.event_name - The event that triggered the workflow
           echo "github.event_name: $GITHUB_EVENT_NAME"
 
+  getbranch:
+    name: Get branch
+    runs-on: ubuntu-latest
+    outputs:
+      branch: ${{ steps.get-branch.outputs.branch }}
+    env:
+      # Put these through an env variable to prevent possible string substitution injection
+      BRANCH_MAJOR: ${{ inputs.branch_major }}
+      BRANCH_MINOR: ${{ inputs.branch_minor }}
+      GITHUB_REPOSITORY: ${{ github.repository }}
+      GITHUB_EVENT_NAME: ${{ github.event_name }}
+    steps:
+      - name: Get branch
+        id: get-branch
+        run: |
+          if [[ $BRANCH_MAJOR != "latest" ]] && [[ $BRANCH_MAJOR != "previous" ]] && [[ $BRANCH_MAJOR != "" ]]; then
+              echo "Invalid value for input branch_major"
+              exit 1
+          fi
+          if [[ $BRANCH_MINOR != "next-minor" ]] && [[ $BRANCH_MINOR != "next-patch" ]] && [[ $BRANCH_MINOR != "" ]]; then
+              echo "Invalid value for input branch_minor"
+              exit 1
+          fi
+          #
+          branch=""
+          #
+          # TODO: add check that $GITHUB_EVENT_NAME == "schedule"
+          #
+          if [[ $BRANCH_MINOR != "" ]] && [[ $BRANCH_MINOR != "" ]]; then
+              # https://docs.github.com/en/rest/branches/branches#list-branches
+              RESP_CODE=$(curl -w %{http_code} -s -L -o __branches.json \
+                -H "Accept: application/vnd.github+json" \
+                -H "Authorization: Bearer ${{ github.token }}"\
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                https://api.github.com/repos/$GITHUB_REPOSITORY/branches \
+              )
+              if [[ $RESP_CODE != "200" ]]; then
+                echo "Failed to list branches - HTTP response code was $RESP_CODE"
+                exit 1
+              fi
+              major_branch=""
+              minor_branch=""
+              major_branches=$(jq -r '.[] | select(.name | test("^[0-9]+$")) | .name' __branches.json | sort -V -r)
+              # "major_branches" needs to be quoted to preserve line-breaks
+              major_branches_count=$(echo "$major_branches" | wc -l)
+              if [[ $BRANCH_MAJOR == "latest" ]]; then
+                  if (( $major_branches_count < 1 )); then
+                      echo "No major branches found"
+                      exit 1
+                  fi
+                  major_branch=$(echo "$major_branches" | head -1)
+              elif [[ $BRANCH_MAJOR == "previous" ]]; then
+                  if (( $major_branches_count < 2 )); then
+                      echo "Only one major branch found"
+                      exit 1
+                  fi
+                  major_branch=$(echo "$major_branches" | head -2 | tail -1)
+              fi
+              if [[ $BRANCH_MINOR == "next-patch" ]]; then
+                  # not escaping rx . as \. because jq will say it is a compile error
+                  minor_branches=$(jq -r ".[] | select(.name | test(\"^$major_branch.[0-9]+$\")) | .name" __branches.json | sort -V -r)
+                  minor_branches_count=$(echo "$minor_branches" | wc -l)
+                  if (( $minor_branches_count < 1 )); then
+                      echo "No minor branches found"
+                      exit 1
+                  fi
+                  minor_branch=$(echo "$minor_branches" | head -1)
+              fi
+              branch=$major_branch
+              if [[ $minor_branch != "" ]]; then
+                  branch="$minor_branch"
+              fi
+              rm __branches.json
+          fi
+          # else
+          #   # get the default branch
+          #   # https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#get-a-repository
+          #   RESP_CODE=$(curl -w %{http_code} -s -L -o __repo.json \
+          #     -H "Accept: application/vnd.github+json" \
+          #     -H "Authorization: Bearer ${{ github.token }}"\
+          #     -H "X-GitHub-Api-Version: 2022-11-28" \
+          #     https://api.github.com/repos/$GITHUB_REPOSITORY \
+          #   )
+          #   if [[ $RESP_CODE != "200" ]]; then
+          #     echo "Failed to fetch repository - HTTP response code was $RESP_CODE"
+          #     exit 1
+          #   fi
+          #   branch=$(jq -r ".default_branch" __repo.json)
+          #   rm __repo.json
+          # fi
+          echo "major_branch is $major_branch"
+          echo "minor_branch is $minor_branch"
+          echo "branch is $branch"
+          echo "::set-output name=branch::$branch"
+
   # Generates a dynamic matrix of jobs to run tests on based on the inputs provided
   genmatrix:
     name: Generate matrix
     runs-on: ubuntu-latest
+    needs: getbranch
 
     # gha-generate-matrix script.php will sanitise matrix outputs so they're safe to use within bash
     outputs:
@@ -89,8 +193,10 @@ jobs:
     steps:
       - name: Generate matrix
         id: generate-matrix
-        uses: silverstripe/gha-generate-matrix@v1
+        #uses: silverstripe/gha-generate-matrix@v1
+        uses: emteknetnz/gha-generate-matrix@pulls/1/branches
         with:
+          branch: ${{ needs.getbranch.outputs.branch }}
           composer_install: ${{ inputs.composer_install }}
           extra_jobs: ${{ inputs.extra_jobs }}
           dynamic_matrix: ${{ inputs.dynamic_matrix }}
@@ -104,7 +210,7 @@ jobs:
 
   # For each job in the matrix, setup an environment and run the tests
   tests:
-    needs: genmatrix
+    needs: [getbranch, genmatrix]
 
     strategy:
       # set fail-fast to false prevent one matrix job from cancelling other matrix jobs
@@ -152,6 +258,8 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@7884fcad6b5d53d10323aee724dc68d8b9096a2e # v2.4.2
+        with:
+          ref: ${{ needs.getbranch.outputs.branch }}
 
       - name: Install PHP
         # SHA will need to be updated to support new php version when they are released
