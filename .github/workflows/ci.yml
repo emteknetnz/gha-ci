@@ -730,7 +730,8 @@ jobs:
     name: Gauge release
     runs-on: ubuntu-latest
     needs: tests
-    # TODO: change to silverstripe
+    # TODO: restrict to silverstripe
+    # TODO: retrict to silverstripe/framework - though will remove once we've validated this whole thing works
     if: ${{ github.repository_owner == 'emteknetnz' && (github.event_name == 'push' ||  github.event_name == 'schedule') }}
     env:
       GITHUB_REPOSITORY: ${{ github.repository }}
@@ -780,7 +781,7 @@ jobs:
           if [[ $DO_RELEASE == "1" ]]; then
             # Escape for regex e.g. 2.0 => 2\.0
             ESCAPED_REF_NAME="${GITHUB_REF_NAME/./"\."}"
-            LATEST_TAG=$(git tag | grep -E ^$ESCAPED_REF_NAME\.[0-9]+$ | sort -V -r | head -n 1
+            LATEST_TAG=$(git tag | grep -E ^$ESCAPED_REF_NAME\.[0-9]+$ | sort -V -r | head -n 1)
             echo "LATEST_TAG is $LATEST_TAG"
             if [[ $LATEST_TAG == "" ]]; then
               echo "Not patch releasing because cannot find latest tag"
