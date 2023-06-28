@@ -786,15 +786,16 @@ jobs:
           echo "dorelease output is $DO_RELEASE"
           echo "dorelease=$DO_RELEASE" >> $GITHUB_OUTPUT
 
-- name: Patch release
-  needs: gaugerelease
-  if: ${{ needs.gaugerelease.outputs.dorelease == 1 }}
-  steps:
+  patchrelease:
+    name: Patch release
+    needs: gaugerelease
+    if: ${{ needs.gaugerelease.outputs.dorelease == 1 }}
+    steps:
 
-      # TODO: may not actually need to do this .. could just get output of LATEST_REMOTE_SHA from prev job
-      - name: Checkout code
-        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+        # TODO: may not actually need to do this .. could just get output of LATEST_REMOTE_SHA from prev job
+        - name: Checkout code
+          uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
 
-      - name: Patch release
-        run: |
-          echo "Yup I would patch release at this point"
+        - name: Patch release
+          run: |
+            echo "Yup I would patch release at this point"
