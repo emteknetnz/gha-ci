@@ -788,6 +788,7 @@ jobs:
 
   patchrelease:
     name: Patch release
+    runs-on: ubuntu-latest
     needs: gaugerelease
     if: ${{ needs.gaugerelease.outputs.dorelease == 1 }}
     steps:
