@@ -151,14 +151,20 @@ jobs:
 
     name: ${{ matrix.name }}
 
+    outputs:
+      latest_local_sha: ${{ steps.output-sha.outputs.latest_local_sha }}
+
     steps:
 
-      - name: My null step
-        run: |
-          echo "Null step that always passes"
+      - name: Checkout code
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
 
-      # - name: Checkout code
-      #   uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+      - name: Output latest SHA
+        id: output-sha
+        run: |
+          LATEST_LOCAL_SHA=$(git rev-parse HEAD)
+          echo "LATEST_LOCAL_SHA is $LATEST_LOCAL_SHA"
+          echo "latest_local_sha=LATEST_LOCAL_SHA" >> $GITHUB_OUTPUT
 
       # - name: Install PHP
       #   # SHA will need to be updated to support new php version when they are released
@@ -729,15 +735,13 @@ jobs:
       GITHUB_REPOSITORY: ${{ github.repository }}
       GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
       GITHUB_REF_NAME: ${{ github.ref_name }}
+      LATEST_LOCAL_SHA: ${{ needs.tests.outputs.latest_local_sha }}
     outputs:
-      matrix: ${{ steps.determineif.outputs.DO_RELEASE }}
+      do_release: ${{ steps.determine-if.outputs.do_release }}
     steps:
 
-      - name: Checkout code
-        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
-
       - name: Determine if should patch release
-        id: determineif
+        id: determine-if
         run: |
           DO_RELEASE=1
           if [[ $GITHUB_EVENT_NAME != "push" ]] && [[ $GITHUB_EVENT_NAME != "schedule" ]]; then
@@ -775,7 +779,8 @@ jobs:
             fi
             LATEST_REMOTE_SHA=$(jq '.[0].sha' __response.json)
             rm __response.json
-            LATEST_LOCAL_SHA=$(git rev-parse HEAD)
+            echo "LATEST_REMOTE_SHA is $LATEST_REMOTE_SHA"
+            echo "LATEST_LOCAL_SHA is $LATEST_LOCAL_SHA"
             if [[ $LATEST_REMOTE_SHA != $LATEST_LOCAL_SHA ]]; then
               echo "Not patch releasing because latest remote sha is not equal to latest local sha"
               DO_RELEASE=0
@@ -783,14 +788,14 @@ jobs:
           fi
           # Test that output works as a condition
           DO_RELEASE=1
-          echo "dorelease output is $DO_RELEASE"
-          echo "dorelease=$DO_RELEASE" >> $GITHUB_OUTPUT
+          echo "do_release output is $DO_RELEASE"
+          echo "do_release=$DO_RELEASE" >> $GITHUB_OUTPUT
 
   patchrelease:
     name: Patch release
     runs-on: ubuntu-latest
     needs: gaugerelease
-    if: ${{ needs.gaugerelease.outputs.dorelease == 1 }}
+    if: ${{ needs.gaugerelease.outputs.do_release == '1' }}
     steps:
 
       # TODO: may not actually need to do this .. could just get output of LATEST_REMOTE_SHA from prev job
