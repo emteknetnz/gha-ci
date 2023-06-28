@@ -57,6 +57,7 @@ jobs:
       GITHUB_REF: ${{ github.ref }}
       GITHUB_REF_NAME: ${{ github.ref_name }}
       GITHUB_REPOSITORY: ${{ github.repository }}
+      GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
       GITHUB_EVENT_NAME: ${{ github.event_name }}
     steps:
       - name: Context
@@ -74,6 +75,8 @@ jobs:
           # gitbub.repository - The owner and repository name. For example, Codertocat/Hello-World
           # On forked repos, this will show <account_of_fork>/<repo>
           echo "github.repository: $GITHUB_REPOSITORY"
+          # The repository owner's username. For example, octocat
+          echo "github.repository_owner: $GITHUB_REPOSITORY_OWNER"
           # github.event_name - The event that triggered the workflow
           echo "github.event_name: $GITHUB_EVENT_NAME"
 
@@ -679,6 +682,59 @@ jobs:
           endtoend_suite: ${{ matrix.endtoend_suite }}
           endtoend_config: ${{ matrix.endtoend_config }}
           js: ${{ matrix.js }}
+      
+      - name: Determine if should patch release
+        id: determine_if_release
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+        run: |
+          SHOULD_PATCH_RELEASE=1
+          if [[ $GITHUB_EVENT_NAME != "push" ]] && [[ $GITHUB_EVENT_NAME != "schedule" ]]; then
+            SHOULD_PATCH_RELEASE=0
+          fi
+          # TODO: change to silverstripe
+          if [[ $GITHUB_REPOSITORY_OWNER != "emteknetnz" ]]; then
+            SHOULD_PATCH_RELEASE=0
+          fi
+          # Must be on a minor branch to do a patch release
+          if ! [[ $GITHUB_REF_NAME =~ [0-9]+\.[0.9] ]]; then
+            SHOULD_PATCH_RELEASE=0
+          fi
+          # Check if there is anything relevant to release
+          # -
+          # @TODO
+          # -
+          # Validate that this commit is that latest commit for the branch
+          # We need to check this in case re-rerunning an old job and there have been new commits since
+          if [[ $SHOULD_PATCH_RELEASE == "1" ]]; then
+            # https://docs.github.com/en/rest/commits/commits?apiVersion=2022-11-28
+            RESP_CODE=$(curl -w %{http_code} -s -o __response.json \
+            -X GET https://api.github.com/repos/$GITHUB_REPOSITORY/commits?sha=$GITHUB_REF_NAME&per_page=1 \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ github.token }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            )
+            if [[ $RESP_CODE != "200" ]]; then
+              echo "Unable to read list of commits - HTTP response code was $RESP_CODE"
+              exit 1
+            fi
+            LATEST_REMOTE_SHA=$(jq '.[0].sha' __response.json)
+            rm __response.json
+            LATEST_LOCAL_SHA=$(git rev-parse HEAD)
+            if [[ $LATEST_REMOTE_SHA != $LATEST_LOCAL_SHA ]]; then
+              SHOULD_PATCH_RELEASE=0
+            fi
+          fi
+          echo "should_patch_release output is $SHOULD_PATCH_RELEASE"
+          echo "should_patch_release=$SHOULD_PATCH_RELEASE" >> $GITHUB_OUTPUT
+
+      - name: Patch release
+        if: ${{ steps.determine_if_release.outputs.should_patch_release == "1" }}
+        run: |
+          echo "Yup I would patch release at this point"
 
       - name: Copy artifacts
         if: always()
