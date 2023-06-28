@@ -743,15 +743,14 @@ jobs:
       - name: Determine if should patch release
         id: determine-if
         run: |
+          DO_RELEASE=1
+
           # Must be on a minor branch to do a patch release
-          # if ! [[ $GITHUB_REF_NAME =~ [0-9]+\.[0.9] ]]; then
-          #   echo "Not patch releasing because not on a minor branch"
-          #   DO_RELEASE=0
-          # fi
-          # Check if there is anything relevant to release
-          # -
-          # @TODO
-          # -
+          if ! [[ $GITHUB_REF_NAME =~ ^[0-9]+\.[0.9]+$ ]]; then
+            echo "Not patch releasing because not on a minor branch"
+            DO_RELEASE=0
+          fi
+
           # Validate that this commit is that latest commit for the branch
           # We need to check this in case re-rerunning an old job and there have been new commits since
           if [[ $DO_RELEASE == "1" ]]; then
@@ -774,6 +773,50 @@ jobs:
             if [[ $LATEST_REMOTE_SHA != $LATEST_LOCAL_SHA ]]; then
               echo "Not patch releasing because latest remote sha is not equal to latest local sha"
               DO_RELEASE=0
+            fi
+          fi
+
+          # Check if there is anything relevant to release
+          if [[ $DO_RELEASE == "1" ]]; then
+            # Escape for regex e.g. 2.0 => 2\.0
+            ESCAPED_REF_NAME="${GITHUB_REF_NAME/./"\."}"
+            LATEST_TAG=$(git tag | grep -E ^$ESCAPED_REF_NAME\.[0-9]+$ | sort -V -r | head -n 1
+            echo "LATEST_TAG is $LATEST_TAG"
+            if [[ $LATEST_TAG == "" ]]; then
+              echo "Not patch releasing because cannot find latest tag"
+              DO_RELEASE=0
+            else
+              [[ $LATEST_TAG =~ ([0-9]+)\.([0-9]+)\.([0-9]+) ]]
+              MAJOR=${BASH_REMATCH[1]}
+              MINOR=${BASH_REMATCH[2]}
+              PATCH=${BASH_REMATCH[3]}
+              NEXT_TAG="$MAJOR.$MINOR.$((PATCH+1))"
+              echo "NEXT_TAG is $NEXT_TAG"
+              # Check on github release notes api if there's anything worth releasing
+              # https://docs.github.com/en/rest/releases/releases?apiVersion=2022-11-28#generate-release-notes-content-for-a-release
+              RESP_CODE=$(curl -w %{http_code} -s -o __response.json \
+              -X POST https://api.github.com/repos/$GITHUB_REPOSITORY/releases/generate-notes \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${{ github.token }}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              -d @- << EOF
+              {
+                "tag_name": "$NEXT_TAG",
+                "target_commitish": "$LATEST_LOCAL_SHA",
+                "previous_tag_name": "$LATEST_TAG"
+              }
+              EOF
+              )
+              if [[ $RESP_CODE != "200" ]]; then
+                echo "Unable to fetch release notes - HTTP response code was $RESP_CODE"
+                if [[ -f __response.json ]]; then
+                  rm __repsonse.json
+                fi
+                exit 1
+              fi
+              cat __repsonse.json
+              # TODO: jq to check if there's anything in the body
+              rm __response.json
             fi
           fi
           echo "do_release output is $DO_RELEASE"
