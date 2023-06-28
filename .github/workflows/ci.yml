@@ -806,17 +806,18 @@ jobs:
                 "target_commitish": "$LATEST_LOCAL_SHA",
                 "previous_tag_name": "$LATEST_TAG"
               }
-              EOF
+              # The following line with EOF in it is intentionally indented like it is
+          EOF
               )
               if [[ $RESP_CODE != "200" ]]; then
                 echo "Unable to fetch release notes - HTTP response code was $RESP_CODE"
                 if [[ -f __response.json ]]; then
-                  rm __repsonse.json
+                  rm __response.json
                 fi
                 exit 1
               fi
-              cat __repsonse.json
-              # TODO: jq to check if there's anything in the body
+              cat __response.json
+              # TODO: jq to check if there's anything in the "body"
               rm __response.json
             fi
           fi
