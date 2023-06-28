@@ -827,8 +827,8 @@ jobs:
               "target_commitish": "$LATEST_LOCAL_SHA",
               "previous_tag_name": "$LATEST_TAG"
             }
-            # The following EOF line is intentionally indented like it is
           EOF
+            # ^ The EOF line above intentionally indented like it is
             )
             if [[ $RESP_CODE != "200" ]]; then
               echo "Unable to fetch release notes - HTTP response code was $RESP_CODE"
