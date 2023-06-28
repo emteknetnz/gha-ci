@@ -168,6 +168,17 @@ jobs:
           echo "latest_local_sha=$LATEST_LOCAL_SHA" >> $GITHUB_OUTPUT
           # Escape for regex e.g. 2.0 => 2\.0
           ESCAPED_REF_NAME="${GITHUB_REF_NAME/./"\."}"
+          
+          echo "ESCAPED_REF_NAME is $ESCAPED_REF_NAME"
+          echo "== 1 =="
+          git tag
+          echo "== 2 =="
+          git tag | grep -E ^$ESCAPED_REF_NAME\.[0-9]+$
+          echo "== 3 =="
+          git tag | grep -E ^$ESCAPED_REF_NAME\.[0-9]+$ | sort -V -r
+          echo "== 4 =="
+          git tag | grep -E ^$ESCAPED_REF_NAME\.[0-9]+$ | sort -V -r | head -n 1
+
           LATEST_TAG=$(git tag | grep -E ^$ESCAPED_REF_NAME\.[0-9]+$ | sort -V -r | head -n 1)
           echo "LATEST_TAG is $LATEST_TAG"
           echo "latest_test=$LATEST_TAG" >> $GITHUB_OUTPUT
