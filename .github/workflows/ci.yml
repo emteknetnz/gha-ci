@@ -732,7 +732,7 @@ jobs:
           echo "should_patch_release=$SHOULD_PATCH_RELEASE" >> $GITHUB_OUTPUT
 
       - name: Patch release
-        if: ${{ steps.determine_if_release.outputs.should_patch_release == "1" }}
+        if: ${{ steps.determine_if_release.outputs.should_patch_release == 1 }}
         run: |
           echo "Yup I would patch release at this point"
 
