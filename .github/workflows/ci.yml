@@ -693,14 +693,17 @@ jobs:
         run: |
           SHOULD_PATCH_RELEASE=1
           if [[ $GITHUB_EVENT_NAME != "push" ]] && [[ $GITHUB_EVENT_NAME != "schedule" ]]; then
+            echo "Not patch releasing because event name is not push or schedule"
             SHOULD_PATCH_RELEASE=0
           fi
           # TODO: change to silverstripe
           if [[ $GITHUB_REPOSITORY_OWNER != "emteknetnz" ]]; then
+            echo "Not patch releasing because repository owner is not silverstripe"
             SHOULD_PATCH_RELEASE=0
           fi
           # Must be on a minor branch to do a patch release
           if ! [[ $GITHUB_REF_NAME =~ [0-9]+\.[0.9] ]]; then
+            echo "Not patch releasing because not on a minor branch"
             SHOULD_PATCH_RELEASE=0
           fi
           # Check if there is anything relevant to release
@@ -726,9 +729,12 @@ jobs:
             rm __response.json
             LATEST_LOCAL_SHA=$(git rev-parse HEAD)
             if [[ $LATEST_REMOTE_SHA != $LATEST_LOCAL_SHA ]]; then
+              echo "Not patch releasing because latest remote sha is not equal to latest local sha"
               SHOULD_PATCH_RELEASE=0
             fi
           fi
+          # Test that output works as a condition
+          SHOULD_PATCH_RELEASE=1
           echo "should_patch_release output is $SHOULD_PATCH_RELEASE"
           echo "should_patch_release=$SHOULD_PATCH_RELEASE" >> $GITHUB_OUTPUT
 
