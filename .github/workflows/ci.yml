@@ -773,7 +773,7 @@ jobs:
               echo "Unable to read list of commits - HTTP response code was $RESP_CODE"
               exit 1
             fi
-            LATEST_REMOTE_SHA=$(jq '.[0].sha' __response.json)
+            LATEST_REMOTE_SHA=$(jq -r '.[0].sha' __response.json)
             rm __response.json
             echo "LATEST_REMOTE_SHA is $LATEST_REMOTE_SHA"
             echo "LATEST_LOCAL_SHA is $LATEST_LOCAL_SHA"
