@@ -841,7 +841,7 @@ jobs:
               cat __response.json
               exit 1
             fi
-            $RELEASE_NOTES=$(jq -r '.body' __response.json)
+            RELEASE_NOTES=$(jq -r '.body' __response.json)
             echo "RELEASE_NOTES is $RELEASE_NOTES"
             echo $RELEASE_NOTES > __body.json
             # Parse release notes one line at a time
@@ -883,6 +883,8 @@ jobs:
       LATEST_TAG: ${{ needs.gaugerelease.outputs.latest_tag }}
       NEXT_TAG: ${{ needs.gaugerelease.outputs.next_tag }}
       RELEASE_NOTES: ${{ needs.gaugerelease.outputs.release_notes }}
+      # <<<<< TODO - still need to work out if this should be marked as the latest release
+      # (should probably do that on gha-tag-release step even if it's an extra github api request?)
     steps:
 
       - name: Patch release
