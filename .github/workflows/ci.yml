@@ -148,7 +148,6 @@ jobs:
 
     env:
       artifacts_name: ${{ matrix.name }}
-      GITHUB_REF_NAME: ${{ github.ref_name }}
 
     name: ${{ matrix.name }}
 
@@ -159,13 +158,6 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
-
-      - name: Output latest SHA
-        id: output-sha
-        run: |
-          LATEST_LOCAL_SHA=$(git rev-parse HEAD)
-          echo "LATEST_LOCAL_SHA is $LATEST_LOCAL_SHA"
-          echo "latest_local_sha=$LATEST_LOCAL_SHA" >> $GITHUB_OUTPUT
 
       - name: Install PHP
         # SHA will need to be updated to support new php version when they are released
@@ -693,7 +685,14 @@ jobs:
           endtoend_suite: ${{ matrix.endtoend_suite }}
           endtoend_config: ${{ matrix.endtoend_config }}
           js: ${{ matrix.js }}
-      
+
+      - name: Output latest SHA
+        id: output-sha
+        run: |
+          LATEST_LOCAL_SHA=$(git rev-parse HEAD)
+          echo "LATEST_LOCAL_SHA is $LATEST_LOCAL_SHA"
+          echo "latest_local_sha=$LATEST_LOCAL_SHA" >> $GITHUB_OUTPUT
+
       - name: Copy artifacts
         if: always()
         env:
@@ -731,9 +730,8 @@ jobs:
     name: Check unreleased changes
     runs-on: ubuntu-latest
     needs: tests
-    # TODO: restrict to silverstripe
-    # TODO: retrict to silverstripe/framework - though will remove once we've validated this whole thing works
-    if: ${{ github.repository_owner == 'emteknetnz' && (github.event_name == 'push' ||  github.event_name == 'schedule') }}
+    # TODO: restricted to emteknetnz/silverstripe-config - remove once we've validated this whole thing works
+    if: ${{ github.repository == "emteknetnz/silverstripe-config" && github.repository_owner == 'emteknetnz' && (github.event_name == 'push' ||  github.event_name == 'schedule') }}
     env:
       GITHUB_REPOSITORY: ${{ github.repository }}
       GITHUB_REF_NAME: ${{ github.ref_name }}
@@ -884,8 +882,7 @@ jobs:
     if: ${{ needs.gaugerelease.outputs.do_release == '1' }}
     steps:
       - name: Patch release
-        # TODO: change to silverstripe @v1
-        uses: emteknetnz/gha-tag-release@pulls/1/patch-release
+        uses: emteknetnz/gha-tag-release@pulls/1/patch
         with:
           tag: ${{ needs.gaugerelease.outputs.next_tag }}
           delete_existing: false
