@@ -888,6 +888,7 @@ jobs:
         uses: emteknetnz/gha-tag-release@pulls/1/patch-release
         with:
           tag: ${{ needs.gaugerelease.outputs.next_tag }}
+          delete_existing: false
           release: true
-          release_auto_desription: true
+          release_auto_notes: true
           previous_tag: ${{ needs.gaugerelease.outputs.latest_tag }}
