@@ -841,9 +841,11 @@ jobs:
               cat __response.json
               exit 1
             fi
-            RELEASE_NOTES=$(jq -r '.body' __response.json)
-            echo $RELEASE_NOTES > __body.json
+            # Read non-raw body for sending to release API later
+            RELEASE_NOTES=$(jq '.body' __response.json)
             echo "release_notes=$RELEASE_NOTES" >> $GITHUB_OUTPUT
+            # Get raw body for text parsing
+            jq -r '.body' __response.json > __body.json
             # Parse release notes one line at a time
             IS_PRS_SECTION=0
             HAS_THINGS_TO_RELEASE=0
