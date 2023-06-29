@@ -882,7 +882,7 @@ jobs:
     if: ${{ needs.gaugerelease.outputs.do_release == '1' }}
     steps:
       - name: Patch release
-        uses: emteknetnz/gha-tag-release@pulls/1/patch
+        uses: emteknetnz/gha-tag-release@pulls/1/patch-release
         with:
           tag: ${{ needs.gaugerelease.outputs.next_tag }}
           delete_existing: false
