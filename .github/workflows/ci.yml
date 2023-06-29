@@ -783,7 +783,7 @@ jobs:
             if [[ $GITHUB_SHA != $LATEST_LOCAL_SHA ]]; then
               echo "Not patch releasing because GITHUB_SHA is not equal to latest local sha"
               DO_RELEASE=0
-            if
+            fi
           fi
 
           # Check is there is an existing tag on the branch using GitHub API
