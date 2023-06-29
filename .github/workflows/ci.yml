@@ -166,7 +166,6 @@ jobs:
           LATEST_LOCAL_SHA=$(git rev-parse HEAD)
           echo "LATEST_LOCAL_SHA is $LATEST_LOCAL_SHA"
           echo "latest_local_sha=$LATEST_LOCAL_SHA" >> $GITHUB_OUTPUT
-          git tag | grep -E ^$ESCAPED_REF_NAME\.[0-9]+$ | sort -V -r | head -n 1
 
       # - name: Install PHP
       #   # SHA will need to be updated to support new php version when they are released
@@ -741,6 +740,9 @@ jobs:
       LATEST_LOCAL_SHA: ${{ needs.tests.outputs.latest_local_sha }}
     outputs:
       do_release: ${{ steps.determine-if.outputs.do_release }}
+      release_notes: ${{ steps.determine-if.outputs.release_notes }}
+      latest_tag: ${{ steps.determine-if.outputs.latest_tag }}
+      next_tag: ${{ steps.determine-if.outputs.next_tag }}
     steps:
 
       - name: Determine if should patch release
@@ -800,6 +802,7 @@ jobs:
             ESCAPED_REF_NAME="${GITHUB_REF_NAME/./"\."}"
             LATEST_TAG=$(jq -r '.[].name' __response.json | grep -E ^$ESCAPED_REF_NAME\.[0-9]+$ | sort -V -r | head -n 1)
             echo "LATEST_TAG is $LATEST_TAG"
+            echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
             if ! [[ $LATEST_TAG =~ ([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
               echo "Not patch releasing because cannot find a matching semver tag on the branch"
               DO_RELEASE=0
@@ -809,10 +812,13 @@ jobs:
               PATCH=${BASH_REMATCH[3]}
               NEXT_TAG="$MAJOR.$MINOR.$((PATCH+1))"
               echo "NEXT_TAG is $NEXT_TAG"
+              echo "next_tag=$NEXT_TAG" >> $GITHUB_OUTPUT
             fi
           fi
 
           # Check if there is anything relevant to release using GitHub API
+          # The API results include all merged pull-requests, not commits
+          # Pull-requests prefixed with MNT or DOC will not be considered relevant for releasing
           if [[ $DO_RELEASE == "1" ]]; then
             # Check on github release notes api if there's anything worth releasing
             # https://docs.github.com/en/rest/releases/releases?apiVersion=2022-11-28#generate-release-notes-content-for-a-release
@@ -835,9 +841,34 @@ jobs:
               cat __response.json
               exit 1
             fi
-            cat __response.json
-            BODY=$(jq -r '.body' __response.json)
-            echo "BODY is $BODY"
+            $RELEASE_NOTES=$(jq -r '.body' __response.json)
+            echo "RELEASE_NOTES is $RELEASE_NOTES"
+            echo $RELEASE_NOTES > __body.json
+            # Parse release notes one line at a time
+            IS_PRS_SECTION=0
+            HAS_THINGS_TO_RELEASE=0
+            while IFS="" read -r line || [[ -n $line ]]; do
+              echo "$line"
+              if [[ $IS_PRS_SECTION == "0" ]]; then
+                if [[ "$line" == "## What's Changed" ]]; then
+                  IS_PRS_SECTION=1
+                fi
+              else
+                if [[ "$line" =~ ^\*[[:space:]](.+?)$ ]]; then
+                  PR_TITLE=${BASH_REMATCH[1]}
+                  if ! [[ $PR_TITLE =~ ^(MNT|DOC) ]]; then
+                    HAS_THINGS_TO_RELEASE=1
+                  fi
+                else
+                  IS_PRS_SECTION=0
+                fi
+              fi
+            done < __body.json
+            if [[ $HAS_THINGS_TO_RELEASE == "0" ]]; then
+              echo "Not patch releasing because there is nothing relevant to release"
+              DO_RELEASE=0
+            fi
+            echo "release_notes=$RELEASE_NOTES" >> $GITHUB_OUTPUT
           fi
           echo "do_release output is $DO_RELEASE"
           echo "do_release=$DO_RELEASE" >> $GITHUB_OUTPUT
@@ -849,6 +880,9 @@ jobs:
     if: ${{ needs.gaugerelease.outputs.do_release == '1' }}
     env:
       LATEST_LOCAL_SHA: ${{ needs.tests.outputs.latest_local_sha }}
+      LATEST_TAG: ${{ needs.gaugerelease.outputs.latest_tag }}
+      NEXT_TAG: ${{ needs.gaugerelease.outputs.next_tag }}
+      RELEASE_NOTES: ${{ needs.gaugerelease.outputs.release_notes }}
     steps:
 
       - name: Patch release
