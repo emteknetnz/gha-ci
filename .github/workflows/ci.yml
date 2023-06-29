@@ -842,8 +842,8 @@ jobs:
               exit 1
             fi
             RELEASE_NOTES=$(jq -r '.body' __response.json)
-            echo "RELEASE_NOTES is $RELEASE_NOTES"
             echo $RELEASE_NOTES > __body.json
+            echo "release_notes=$RELEASE_NOTES" >> $GITHUB_OUTPUT
             # Parse release notes one line at a time
             IS_PRS_SECTION=0
             HAS_THINGS_TO_RELEASE=0
@@ -868,7 +868,6 @@ jobs:
               echo "Not patch releasing because there is nothing relevant to release"
               DO_RELEASE=0
             fi
-            echo "release_notes=$RELEASE_NOTES" >> $GITHUB_OUTPUT
           fi
           echo "do_release output is $DO_RELEASE"
           echo "do_release=$DO_RELEASE" >> $GITHUB_OUTPUT
