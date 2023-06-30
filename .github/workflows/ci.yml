@@ -852,8 +852,8 @@ jobs:
               exit 1
             fi
             cat __response.json
-            # Get raw body for text parsing
-            jq -r 'commits[].commit.message' __response.json > __body.json
+            # Get commits for text parsing
+            jq -r 'commits[].commit.message' __response.json > __commits.json
             # Parse release notes one line at a time
             HAS_THINGS_TO_RELEASE=0
             while IFS="" read -r line || [[ -n $line ]]; do
@@ -861,7 +861,7 @@ jobs:
                 HAS_THINGS_TO_RELEASE=1
                 break
               fi
-            done < __body.json
+            done < __commits.json
             if [[ $HAS_THINGS_TO_RELEASE == "0" ]]; then
               echo "Not patch releasing because there is nothing relevant to release"
               DO_RELEASE=0
