@@ -852,7 +852,7 @@ jobs:
             fi
             cat __response.json
             # Get commits for text parsing
-            jq -r 'commits[].commit.message' __response.json > __commits.json
+            jq -r '.commits[].commit.message' __response.json > __commits.json
             # Parse release notes one line at a time
             HAS_THINGS_TO_RELEASE=0
             while IFS="" read -r line || [[ -n $line ]]; do
