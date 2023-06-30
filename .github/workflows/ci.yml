@@ -840,9 +840,8 @@ jobs:
             #   )
             # Compare commits between current sha with latest tag to see if there is anything worth releasing
             # https://docs.github.com/en/rest/commits/commits?apiVersion=2022-11-28#compare-two-commits
-            # https://api.github.com/repos/silverstripe/silverstripe-framework/compare/4.13.8...5303e08d34c80348514a6c1d90815450b2518921
             RESP_CODE=$(curl -w %{http_code} -s -o __response.json \
-            -X GET https://api.github.com/repos/silverstripe/silverstripe-framework/compare/$LATEST_TAG...$GITHUB_SHA?per_page=100 \
+            -X GET https://api.github.com/repos/$GITHUB_REPOSITORY/compare/$LATEST_TAG...$GITHUB_SHA?per_page=100 \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ github.token }}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
