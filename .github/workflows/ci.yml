@@ -854,25 +854,12 @@ jobs:
             cat __response.json
             # Get raw body for text parsing
             jq -r 'commits[].commit.message' __response.json > __body.json
-            cat 0
             # Parse release notes one line at a time
-            IS_PRS_SECTION=0
             HAS_THINGS_TO_RELEASE=0
             while IFS="" read -r line || [[ -n $line ]]; do
-              echo "$line"
-              if [[ $IS_PRS_SECTION == "0" ]]; then
-                if [[ "$line" == "## What's Changed" ]]; then
-                  IS_PRS_SECTION=1
-                fi
-              else
-                if [[ "$line" =~ ^\*[[:space:]](.+?)$ ]]; then
-                  PR_TITLE=${BASH_REMATCH[1]}
-                  if ! [[ $PR_TITLE =~ ^(MNT|DOC) ]]; then
-                    HAS_THINGS_TO_RELEASE=1
-                  fi
-                else
-                  IS_PRS_SECTION=0
-                fi
+              if ! [[ "$line" =~ ^(Merge|MNT|DOC) ]] && ! [[ $line =~ ^[[:space:]]*$ ]]; then
+                HAS_THINGS_TO_RELEASE=1
+                break
               fi
             done < __body.json
             if [[ $HAS_THINGS_TO_RELEASE == "0" ]]; then
