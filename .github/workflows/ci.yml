@@ -823,28 +823,38 @@ jobs:
           # Pull-requests prefixed with MNT or DOC will not be considered relevant for releasing
           if [[ $DO_RELEASE == "1" ]]; then
             # Check on github release notes api if there's anything worth releasing
-            # https://docs.github.com/en/rest/releases/releases?apiVersion=2022-11-28#generate-release-notes-content-for-a-release
+            #   # https://docs.github.com/en/rest/releases/releases?apiVersion=2022-11-28#generate-release-notes-content-for-a-release
+            #   RESP_CODE=$(curl -w %{http_code} -s -o __response.json \
+            #   -X POST https://api.github.com/repos/$GITHUB_REPOSITORY/releases/generate-notes \
+            #   -H "Accept: application/vnd.github+json" \
+            #   -H "Authorization: Bearer ${{ github.token }}" \
+            #   -H "X-GitHub-Api-Version: 2022-11-28" \
+            #   -d @- << EOF
+            #   {
+            #     "tag_name": "$NEXT_TAG",
+            #     "target_commitish": "$LATEST_LOCAL_SHA",
+            #     "previous_tag_name": "$LATEST_TAG"
+            #   }
+            # EOF
+            #   # ^ The EOF line above intentionally indented like it is
+            #   )
+            # Compare commits between current sha with latest tag to see if there is anything worth releasing
+            # https://docs.github.com/en/rest/commits/commits?apiVersion=2022-11-28#compare-two-commits
+            # https://api.github.com/repos/silverstripe/silverstripe-framework/compare/4.13.8...5303e08d34c80348514a6c1d90815450b2518921
             RESP_CODE=$(curl -w %{http_code} -s -o __response.json \
-            -X POST https://api.github.com/repos/$GITHUB_REPOSITORY/releases/generate-notes \
+            -X GET https://api.github.com/repos/silverstripe/silverstripe-framework/compare/$LATEST_TAG...$GITHUB_SHA?per_page=100 \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ github.token }}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            -d @- << EOF
-            {
-              "tag_name": "$NEXT_TAG",
-              "target_commitish": "$LATEST_LOCAL_SHA",
-              "previous_tag_name": "$LATEST_TAG"
-            }
-          EOF
-            # ^ The EOF line above intentionally indented like it is
             )
             if [[ $RESP_CODE != "200" ]]; then
-              echo "Unable to fetch release notes - HTTP response code was $RESP_CODE"
-              cat __response.json
+              echo "Unable to fetch compare two commits - HTTP response code was $RESP_CODE"
               exit 1
             fi
+            cat __response.json
             # Get raw body for text parsing
-            jq -r '.body' __response.json > __body.json
+            jq -r 'commits[].commit.message' __response.json > __body.json
+            cat 0
             # Parse release notes one line at a time
             IS_PRS_SECTION=0
             HAS_THINGS_TO_RELEASE=0
