@@ -788,7 +788,7 @@ jobs:
           LATEST_TAG=""
           NEXT_TAG=""
           if [[ $DO_RELEASE == "1" ]]; then
-            # https://docs.github.com/en/rest/git/tags?apiVersion=2022-11-28
+            # https://docs.github.com/en/rest/git/refs?apiVersion=2022-11-28#list-matching-references
             RESP_CODE=$(curl -w %{http_code} -s -o __response.json \
             -X GET https://api.github.com/repos/${GITHUB_REPOSITORY}/git/matching-refs/tags/${GITHUB_REF_NAME} \
             -H "Accept: application/vnd.github+json" \
