@@ -790,7 +790,7 @@ jobs:
           if [[ $DO_RELEASE == "1" ]]; then
             # https://docs.github.com/en/rest/git/tags?apiVersion=2022-11-28
             RESP_CODE=$(curl -w %{http_code} -s -o __response.json \
-            -X GET https://api.github.com/repos/${GITHUB_REPOSITORY}/tags?per_page=100 \
+            -X GET https://api.github.com/repos/${GITHUB_REPOSITORY}/git/matching-refs/tags/${GITHUB_REF_NAME} \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ github.token }}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
@@ -800,9 +800,7 @@ jobs:
               exit 1
             fi
             # Get the latest tag
-            # Escape for regex e.g. 2.0 => 2\.0
-            ESCAPED_REF_NAME="${GITHUB_REF_NAME/./"\."}"
-            LATEST_TAG=$(jq -r '.[].name' __response.json | grep -E ^$ESCAPED_REF_NAME\.[0-9]+$ | sort -V -r | head -n 1)
+            LATEST_TAG=$(jq -r '.[].ref' __response.json | grep -Po '(?<=^refs\/tags\/)[0-9]+\.[0-9]+\.[0-9]+$' | sort -V -r | head -n 1)
             echo "LATEST_TAG is $LATEST_TAG"
             echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
             if ! [[ $LATEST_TAG =~ ([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
