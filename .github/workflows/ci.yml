@@ -107,7 +107,6 @@ jobs:
 
   # For each job in the matrix, setup an environment and run the tests
   tests:
-    if: never()
     needs: genmatrix
 
     strategy:
