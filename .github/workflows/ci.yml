@@ -816,7 +816,7 @@ jobs:
       - name: Gauge release
         id: gauge-release
         #uses: silverstripe/gha-gauge-release@v1
-        uses: emteknetnz/gha-gauge-release@1
+        uses: emteknetnz/gha-gauge-release@main
         with:
           latest_local_sha: ${{ needs.tests.outputs.latest_local_sha }}
 
