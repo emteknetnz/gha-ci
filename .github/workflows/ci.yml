@@ -758,8 +758,8 @@ jobs:
           CAN_TAG=0
 
           # If we own it, then we can tag it
-          if [[ $GITHUB_REPOSITORY_OWNER == "silverstripe" ]]; then
-            echo "Repository is in the silverstripe organisation"
+          if [[ $GITHUB_REPOSITORY_OWNER == "emteknetnz" ]] || [[ $GITHUB_REPOSITORY_OWNER == "silverstripe" ]]; then
+            echo "Repository is in the emteknetnz or silverstripe organisation"
             CAN_TAG=1
           fi
 
@@ -808,7 +808,7 @@ jobs:
   gaugerelease:
     name: Check unreleased changes
     runs-on: ubuntu-latest
-    needs: ci
+    needs: checkgovernance
     outputs:
       do_release: ${{ steps.gauge-release.outputs.do_release }}
       next_tag: ${{ steps.gauge-release.outputs.next_tag }}
@@ -818,7 +818,7 @@ jobs:
         #uses: silverstripe/gha-gauge-release@v1
         uses: emteknetnz/gha-gauge-release@1
         with:
-          latest_local_sha: ${{ needs.ci.outputs.latest_local_sha }}
+          latest_local_sha: ${{ needs.tests.outputs.latest_local_sha }}
 
   patchrelease:
     name: Patch release
