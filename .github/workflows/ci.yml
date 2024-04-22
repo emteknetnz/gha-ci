@@ -492,13 +492,6 @@ jobs:
             $j->config->{"preferred-install"}->{"cwp/*"} = "source";
             $j->config->{"preferred-install"}->{"tractorcow/*"} = "source";
             $j->config->{"preferred-install"}->{"*"} = "dist";
-
-            $j->repositories = new stdClass();
-            $j->repositories->x1 = new stdClass();
-            $j->repositories->x1->type = "vcs";
-            $j->repositories->x1->url = "git@github.com:creative-commoners/silverstripe-behat-extension.git";
-            $j->require->{"silverstripe/behat-extension"} = "dev-pulls/5/rerun as 5.x-dev";
-            
             file_put_contents("composer.json", json_encode($j, JSON_PRETTY_PRINT + JSON_UNESCAPED_SLASHES));
           '
 
@@ -846,7 +839,7 @@ jobs:
           echo "matrix.phpunit: ${{ matrix.phpunit }}"
 
       - name: Run tests
-        uses: emteknetnz/gha-run-tests@main
+        uses: silverstripe/gha-run-tests@v1
         with:
           phpunit: ${{ matrix.phpunit }}
           phpunit_suite: ${{ matrix.phpunit_suite }}
