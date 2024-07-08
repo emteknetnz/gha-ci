@@ -597,6 +597,10 @@ jobs:
               # This version was originally worked out in gha-generate-matrix
               composer remove silverstripe/installer --no-update
 
+              # debug
+              echo "DEBUG 1"
+              cat composer.json
+
               # Next require the lowest possible version of silverstripe/installer
               # Due to a limitation of composer, we have to use --no-install rather than --no-update to
               # resolve the lowest version. This will create a composer.lock file which we don't actually want
@@ -621,6 +625,7 @@ jobs:
             fi
 
             # debug
+            echo "DEBUG 2"
             cat composer.json
 
             # matrix.composer_args sometimes includes `--prefer-lowest` which is only supported by `composer update`, not `composer install`
