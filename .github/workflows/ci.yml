@@ -926,7 +926,7 @@ jobs:
           echo "matrix.phpunit: ${{ matrix.phpunit }}"
 
       - name: Run tests
-        uses: silverstripe/gha-run-tests@v1
+        uses: emteknetnz/gha-run-tests@main
         with:
           phpunit: ${{ matrix.phpunit }}
           phpunit_suite: ${{ matrix.phpunit_suite }}
@@ -936,6 +936,7 @@ jobs:
           endtoend: ${{ matrix.endtoend }}
           endtoend_suite: ${{ matrix.endtoend_suite }}
           endtoend_config: ${{ matrix.endtoend_config }}
+          endtoend_tag: ${{ matrix.endtoend_tag }}
           js: ${{ matrix.js }}
           doclinting: ${{ matrix.doclinting }}
 
