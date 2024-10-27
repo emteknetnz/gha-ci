@@ -629,7 +629,7 @@ jobs:
                 if (strpos($v, "^") === 0) {
                   $v = str_replace("^", "", $v) . ".x-dev";
                   # Remove @beta, @rc, or @alpha if they are there
-                  $v = preg_replace("/@(alpha|beta|rc)/", "", $v);
+                  $v = preg_replace("/@(alpha|beta|rc)/i", "", $v);
                 }
                 $j->require->{"silverstripe/installer"} = $v;
                 $c = json_encode($j, JSON_PRETTY_PRINT + JSON_UNESCAPED_SLASHES);
@@ -1070,7 +1070,7 @@ jobs:
           fi
 
           FOUND_WORKFLOW=0
-          WORKFLOWS=$(jq -r '.workflows[].path' __response.json)
+          WORKFLOWS=$(jq -r '.workflows[] | select(.state == "active") | .path' __response.json)
           while IFS= read -r WORKFLOW_PATH; do
             if [[ "$WORKFLOW_PATH" == ".github/workflows/tag-patch-release.yml" ]]; then
               echo "Found tag-patch-release.yml"
