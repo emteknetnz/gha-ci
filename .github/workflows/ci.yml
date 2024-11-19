@@ -153,6 +153,15 @@ jobs:
         ports:
           - 3380:3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=10
+      mysql84:
+        image: mysql:8.4
+        env:
+          MYSQL_HOST: 127.0.0.1
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: SS_mysite
+        ports:
+          - 3384:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=10
       postgres:
         image: postgres
         env:
@@ -783,7 +792,12 @@ jobs:
           SS_DATABASE_PORT="3357"
           EOF
               else
-                MYSQL_PORT=${{ matrix.db == 'mysql57' && '3357' || '3380' }}
+                MYSQL_PORT=3357
+                if [[ "${{ matrix.db }}" == "mysql80" ]]; then
+                  MYSQL_PORT=3380
+                elif [[ "${{ matrix.db }}" == "mysql84" ]]; then
+                  MYSQL_PORT=3384
+                fi
                 echo "mysql version":
                 mysql --host=127.0.0.1 --user=root --password=root --port=$MYSQL_PORT --execute="SELECT VERSION();" || true
                 cat << EOF > .env
