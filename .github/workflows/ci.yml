@@ -269,32 +269,10 @@ jobs:
         run: |
           if [[ "${{ matrix.endtoend }}" == "true" ]]; then
             sudo apt install -y software-properties-common
-            
-            # Remove the source list file if it exists
-            if [ -f /etc/apt/sources.list.d/ondrej-php.list ]; then
-                echo "/etc/apt/sources.list.d/ondrej-php.list found and being force removed"
-                sudo rm -f /etc/apt/sources.list.d/ondrej-php.list
-            else
-                echo "/etc/apt/sources.list.d/ondrej-php.list not found"
-            fi
-            
-            # Remove the legacy trusted.gpg.d key if it exists
-            if [ -f /etc/apt/trusted.gpg.d/ondrej-php.gpg ]; then
-                echo "/etc/apt/trusted.gpg.d/ondrej-php.gpg found and being force removed"
-                sudo rm -f /etc/apt/trusted.gpg.d/ondrej-php.gpg
-            else
-                echo "/etc/apt/trusted.gpg.d/ondrej-php.gpg not found"
-            fi
-            
-            # Remove the modern keyrings key if it exists
-            if [ -f /usr/share/keyrings/ondrej-php-keyring.gpg ]; then
-                echo "/usr/share/keyrings/ondrej-php-keyring.gpg found and being force removed"
-                sudo rm -f /usr/share/keyrings/ondrej-php-keyring.gpg
-            else
-                echo "/usr/share/keyrings/ondrej-php-keyring.gpg not found"
-            fi
-            
-            sudo add-apt-repository -y ppa:ondrej/php
+
+            # ondrej/php appears to already be added now, though ondrej/apache2 is not
+            # leaving ondrej/php commented out as this may change again in the future
+            # sudo add-apt-repository -y ppa:ondrej/php
             sudo add-apt-repository -y ppa:ondrej/apache2
             
             # Run apt update allowing for a change in the "Label" field which has happened at least once after the
