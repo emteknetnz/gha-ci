@@ -269,10 +269,22 @@ jobs:
         run: |
           if [[ "${{ matrix.endtoend }}" == "true" ]]; then
             sudo apt install -y software-properties-common
-            # Remove legacy apt sources entry before installing PPA
+
+            # Remove any existing, potentially conflicting PPA source files for ondrej/php and ondrej/apache2
+            # It's safer to remove both, as a conflicting key for one might affect the other if they share keys
             [ -f /etc/apt/sources.list.d/ondrej-php.list ] && sudo rm /etc/apt/sources.list.d/ondrej-php.list
+            [ -f /etc/apt/sources.list.d/ondrej-apache2.list ] && sudo rm /etc/apt/sources.list.d/ondrej-apache2.list
+
+            # Remove old style keys and ensure all PPA keys are cleared and re-added cleanly
+            # This refreshes the keyring
+            # This might not be strictly necessary if add-apt-repository handles it perfectly
+            # but sometimes it may be necessary
+            sudo rm -f /etc/apt/trusted.gpg.d/ondrej-php.gpg 
+            sudo rm -f /etc/apt/trusted.gpg.d/ondrej-apache2.gpg
+            
             sudo add-apt-repository -y ppa:ondrej/php
             sudo add-apt-repository -y ppa:ondrej/apache2
+            
             # Run apt update allowing for a change in the "Label" field which has happened at least once after the
             # maintainer changed the label field, causing apt to exit with status code of 100
             # See https://manpages.debian.org/unstable/apt/apt-get.8.en.html under the `--allow-releaseinfo-change` heading
