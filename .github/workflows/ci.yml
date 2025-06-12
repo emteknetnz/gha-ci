@@ -278,12 +278,19 @@ jobs:
               echo "/etc/apt/sources.list.d/ondrej-php.list not found"
             fi
 
-            if [ -f /usr/share/keyrings/ondrej-php-keyring.gpg ]; then
-              cat /usr/share/keyrings/ondrej-php-keyring.gpg
-              sudo rm /usr/share/keyrings/ondrej-php-keyring.gpg
+            if [ -f /etc/apt/trusted.gpg.d/ondrej-php.gpg ]; then
+              echo /etc/apt/trusted.gpg.d/ondrej-php.gpg found and being force removed"
+              sudo rm -f /etc/apt/trusted.gpg.d/ondrej-php.gpg
             else
-              echo "/usr/share/keyrings/ondrej-php-keyring.gpg not found"
-            fi
+              echo "/etc/apt/trusted.gpg.d/ondrej-php.gpg not found"
+            fi            
+
+            #if [ -f /usr/share/keyrings/ondrej-php-keyring.gpg ]; then
+            #  echo "/usr/share/keyrings/ondrej-php-keyring.gpg found and being force removed"
+            #  sudo rm -f /usr/share/keyrings/ondrej-php-keyring.gpg
+            #else
+            #  echo "/usr/share/keyrings/ondrej-php-keyring.gpg not found"
+            #fi
             
             sudo add-apt-repository -y ppa:ondrej/php
             sudo add-apt-repository -y ppa:ondrej/apache2
