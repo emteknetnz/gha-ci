@@ -272,14 +272,14 @@ jobs:
             
             # Remove legacy apt sources entry before installing PPA
             if [ -f /etc/apt/sources.list.d/ondrej-php.list ]; then
-              cat /etc/apt/sources.list.d/ondrej-php.list
-              sudo rm /etc/apt/sources.list.d/ondrej-php.list
+              echo "/etc/apt/sources.list.d/ondrej-php.list found and being force removed"
+              sudo rm -f /etc/apt/sources.list.d/ondrej-php.list
             else
               echo "/etc/apt/sources.list.d/ondrej-php.list not found"
             fi
 
             if [ -f /etc/apt/trusted.gpg.d/ondrej-php.gpg ]; then
-              echo /etc/apt/trusted.gpg.d/ondrej-php.gpg found and being force removed"
+              echo "/etc/apt/trusted.gpg.d/ondrej-php.gpg found and being force removed"
               sudo rm -f /etc/apt/trusted.gpg.d/ondrej-php.gpg
             else
               echo "/etc/apt/trusted.gpg.d/ondrej-php.gpg not found"
