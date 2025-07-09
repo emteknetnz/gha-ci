@@ -950,6 +950,10 @@ jobs:
           if [[ -f $GITHUB_WORKSPACE/silverstripe.log ]]; then
             cp $GITHUB_WORKSPACE/silverstripe.log artifacts/
           fi
+          # Ensure there is a least one file in artifacts dir or job will fail
+          if [[ -z $(ls artifacts) ]]; then
+            touch artifacts/empty
+          fi
 
       # https://docs.github.com/en/actions/using-workflows/storing-workflow-data-as-artifacts
       - name: Upload artifacts
