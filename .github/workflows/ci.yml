@@ -105,7 +105,7 @@ jobs:
     steps:
       - name: Generate matrix
         id: generate-matrix
-        uses: silverstripe/gha-generate-matrix@v2
+        uses: emteknetnz/gha-generate-matrix@main
         with:
           composer_install: ${{ inputs.composer_install }}
           extra_jobs: ${{ inputs.extra_jobs }}
