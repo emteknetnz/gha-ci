@@ -276,7 +276,7 @@ jobs:
             # See https://manpages.debian.org/unstable/apt/apt-get.8.en.html under the `--allow-releaseinfo-change` heading
             sudo apt update --allow-releaseinfo-change-label
 
-            # The requirements from libnss3-dev are for chrome-testing to run properly
+            # The requirements from libnss3-dev onwards are for chrome-testing to run properly
             sudo apt install -y software-properties-common libapache2-mod-php${{ matrix.php }} libnss3-dev libgdk-pixbuf2.0-dev libgtk-3-dev libxss-dev
 
             # ubuntu-latest comes with a current version of google-chrome-stable and chromedriver
