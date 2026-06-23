@@ -269,6 +269,7 @@ jobs:
         run: |
           if [[ "${{ matrix.endtoend }}" == "true" ]]; then
             # ppa:ondrej/php appears to be already added, though ppa:ondrej/apache2 is not
+            sudo add-apt-repository -y ppa:ondrej/php
             sudo add-apt-repository -y ppa:ondrej/apache2
 
             # Run apt update allowing for a change in the "Label" field which has happened at least once after the
