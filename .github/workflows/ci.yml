@@ -200,7 +200,7 @@ jobs:
         uses: shivammathur/setup-php@c541c155eee45413f5b09a52248675b1a2575231 # v2.31.1
         with:
           php-version: ${{ matrix.php }}
-          extensions: curl, dom, gd, intl, json, ldap, mbstring, mysql, tidy, xdebug, zip
+          extensions: curl, dom, gd, intl, json, ldap, mbstring, mysql, tidy, xdebug, zip${{ format('{0}', matrix.install_in_memory_cache_exts) == 'true' && ', apcu, memcached' || '' }}
           tools: composer:v2
           coverage: xdebug
           # While this should be the correct way to allow forks in composer.json repositories
@@ -251,9 +251,8 @@ jobs:
           fi
 
           if [[ $INSTALL_IN_MEMORY_CACHE_EXTS == 'true' ]]; then
-            sudo apt-get install php${{ matrix.php }}-memcached
             sudo sh -c "echo 'apc.enable_cli=On' >> /etc/php/${{ matrix.php }}/cli/php.ini"
-            echo 'Installed in-memory cache extensions and set APCu to be enabled'
+            echo 'Set APCu to be enabled (APCu and memcached are installed by shivammathur/setup-php)'
             echo 'Note that Redis will be added as a composer dependency'
           fi
 
@@ -268,11 +267,19 @@ jobs:
           AWS_DEFAULT_REGION: ap-southeast-2
         run: |
           if [[ "${{ matrix.endtoend }}" == "true" ]]; then
-            # Neither ppa:ondrej/php nor ppa:ondrej/apache2 are added by default.
-            # ppa:ondrej/php must be added explicitly - while shivammathur/setup-php installs the PHP CLI,
-            # it does not leave the PPA registered in apt sources, which is needed for libapache2-mod-php below.
-            sudo add-apt-repository -y ppa:ondrej/php
-            sudo add-apt-repository -y ppa:ondrej/apache2
+            # ppa:ondrej/php and ppa:ondrej/apache2 are not published for Ubuntu 26.04 onwards
+            # packages.sury.org replaces them and has every PHP version for both Ubuntu 24.04 and 26.04
+            # The php repository is needed for libapache2-mod-php below
+            # Only add a repository if it isn't already registered, e.g. by shivammathur/setup-php, as registering it
+            # twice with a different signed-by keyring will cause apt update to fail
+            CODENAME=$(. /etc/os-release && echo "$VERSION_CODENAME")
+            curl -fsSLo /tmp/debsuryorg-archive-keyring.deb https://packages.sury.org/debsuryorg-archive-keyring.deb
+            sudo dpkg -i /tmp/debsuryorg-archive-keyring.deb
+            for REPO in php apache2; do
+              if ! grep -rqs "packages.sury.org/$REPO" /etc/apt/sources.list /etc/apt/sources.list.d/; then
+                echo "deb [signed-by=/usr/share/keyrings/debsuryorg-archive-keyring.gpg] https://packages.sury.org/$REPO/ $CODENAME main" | sudo tee /etc/apt/sources.list.d/sury-$REPO.list
+              fi
+            done
 
             # Run apt update allowing for a change in the "Label" field which has happened at least once after the
             # maintainer changed the label field, causing apt to exit with status code of 100
@@ -280,7 +287,8 @@ jobs:
             sudo apt update --allow-releaseinfo-change-label
 
             # The requirements from libnss3-dev onwards are for chrome-testing to run properly
-            sudo apt install -y software-properties-common libapache2-mod-php${{ matrix.php }} libnss3-dev libgdk-pixbuf2.0-dev libgtk-3-dev libxss-dev
+            # libgdk-pixbuf2.0-dev was renamed to libgdk-pixbuf-2.0-dev, the old name does not exist in Ubuntu 26.04
+            sudo apt install -y software-properties-common libapache2-mod-php${{ matrix.php }} libnss3-dev libgdk-pixbuf-2.0-dev libgtk-3-dev libxss-dev
 
             # ubuntu-latest comes with a current version of google-chrome-stable and chromedriver
             # however we want to use the https://developer.chrome.com/blog/chrome-for-testing/ to match
@@ -503,6 +511,8 @@ jobs:
           # a) Ensure composer.json has prefer-stable true and minimum-stability dev
           # b) Update preferred-install to source for recipes and some modules that run
           #    other unit-tests in other modules
+          # c) Do not block installing packages with security advisories, as CI installs dev branches
+          #    of release lines that may have unfixed medium or low advisories
           php -r '
             $j = json_decode(file_get_contents("composer.json"));
             $j->{"prefer-stable"} = true;
@@ -510,6 +520,13 @@ jobs:
             if (empty($j->config)) {
               $j->config = new stdClass();
             }
+            if (empty($j->config->policy)) {
+              $j->config->policy = new stdClass();
+            }
+            if (empty($j->config->policy->advisories)) {
+              $j->config->policy->advisories = new stdClass();
+            }
+            $j->config->policy->advisories->block = false;
             if (empty($j->config->{"preferred-install"})) {
               $j->config->{"preferred-install"} = new stdClass();
             }
@@ -653,10 +670,12 @@ jobs:
 
             # matrix.composer_args sometimes includes `--prefer-lowest` which is only supported by `composer update`, not `composer install`
             # Modules do not have composer.lock files, so `composer update` is the same speed as `composer install`
-            # `|| :` prevents an exit code on a failed composer update from halting the workflow
-            composer update --no-interaction --no-progress ${{ matrix.composer_args }} 2> __update_attempt.txt || :
+            # `|| COMPOSER_UPDATE_EXIT_CODE=$?` prevents an exit code on a failed composer update from halting the workflow
+            # The exit code is checked below so that failures with no "Problem" in the output, such as a failed download, are not treated as a success
+            COMPOSER_UPDATE_EXIT_CODE=0
+            composer update --no-interaction --no-progress ${{ matrix.composer_args }} 2> __update_attempt.txt || COMPOSER_UPDATE_EXIT_CODE=$?
 
-            if ! [[ $(cat __update_attempt.txt) =~ Problem ]]; then
+            if [[ $COMPOSER_UPDATE_EXIT_CODE == 0 ]]; then
               # Succesfully ran composer update and installed everything
               rm __update_attempt.txt
               # Useful to see generated composer.json when diagnosing new bugs
@@ -905,7 +924,7 @@ jobs:
           echo "matrix.phpunit: ${{ matrix.phpunit }}"
 
       - name: Run tests
-        uses: emteknetnz/gha-run-tests@main
+        uses: silverstripe/gha-run-tests@v2
         with:
           phpunit: ${{ matrix.phpunit }}
           phpunit_suite: ${{ matrix.phpunit_suite }}
