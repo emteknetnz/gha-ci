@@ -443,6 +443,17 @@ jobs:
           # run apache as 'runner:docker' instead of 'www-data:www-data'
           sudo sh -c "echo 'export APACHE_RUN_USER=runner' >> /etc/apache2/envvars"
           sudo sh -c "echo 'export APACHE_RUN_GROUP=docker' >> /etc/apache2/envvars"
+          # From Ubuntu 26.04 apache2.service is sandboxed - ProtectHome=read-only prevents writing to the
+          # project in /home/runner, and MemoryDenyWriteExecute=yes prevents PHP from using PCRE JIT
+          cat << EOF > __apache2-override.conf
+          [Service]
+          ProtectHome=no
+          MemoryDenyWriteExecute=no
+          EOF
+          sudo mkdir -p /etc/systemd/system/apache2.service.d
+          sudo cp __apache2-override.conf /etc/systemd/system/apache2.service.d/override.conf
+          rm __apache2-override.conf
+          sudo systemctl daemon-reload
           sudo systemctl restart apache2
           echo "Apache has been configured"
 
